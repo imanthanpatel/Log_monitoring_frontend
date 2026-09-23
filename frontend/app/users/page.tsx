@@ -133,15 +133,8 @@ function UsersContent() {
     if (!editUser) return;
     setSaving(true);
     try {
-      const data: Partial<User> = {
-        username: editUsername,
-        email: editEmail,
-        role: editRole,
-        first_name: editFirstName,
-        last_name: editLastName,
-      };
-      const updated = await updateUser(editUser.id, data);
-      setUsers((prev) => prev.map((u) => (u.id === editUser.id ? updated : u)));
+      const updated = await updateUser(editUser.id, { role: editRole });
+      setUsers((prev) => prev.map((u) => (u.id === editUser.id ? { ...u, role: editRole } : u)));
       toast.success('User updated successfully');
       setEditOpen(false);
     } catch (err) {

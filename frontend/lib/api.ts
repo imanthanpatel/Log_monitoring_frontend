@@ -189,8 +189,11 @@ export async function register(data: {
 }
 
 export async function logout(): Promise<void> {
+  const refresh = getRefreshToken();
   try {
-    await api.post('/auth/logout/', {});
+    if (refresh) {
+      await api.post('/auth/logout/', { refresh });
+    }
   } catch {
     // ignore — we clear locally regardless
   }
@@ -210,7 +213,7 @@ export const getAlert = (id: number | string) => api.get<Alert>(`/alerts/${id}/`
 export const updateAlertStatus = (id: number, status: AlertStatus) =>
   api.put<Alert>('/alerts/status/', { id, status });
 export const assignAlert = (id: number | string, investigatorId: number) =>
-  api.post<Alert>(`/alerts/${id}/assign/`, { investigator_id: investigatorId });
+  api.post<Alert>(`/alerts/${id}/assign/`, { investigator: investigatorId });
 
 // ---- Logs ----
 export const getLogs = () => api.get<SecurityLog[]>('/logs/');
@@ -250,9 +253,17 @@ export const uploadEvidence = (
 };
 
 // ---- Notifications ----
-export const getNotifications = () => api.get<Notification[]>('/notifications/');
+export const getNotifications = async () => {
+  const data = await api.get<Array<Notification & { notification_type?: string; is_read?: boolean; read?: boolean }>>('/notifications/');
+  return (Array.isArray(data) ? data : []).map((n) => ({
+    ...n,
+    type: n.notification_type ?? n.type,
+    read: n.read ?? n.is_read ?? false,
+    is_read: n.is_read ?? n.read ?? false,
+  }));
+};
 export const markNotificationRead = (id: number | string) =>
-  api.post<Notification>(`/notifications/${id}/read/`, {});
+  api.patch<{ message: string; notification_id: number; is_read: boolean }>(`/notifications/${id}/read/`, {});
 
 // ---- Audit Logs ----
 export const getAuditLogs = () => api.get<AuditLog[]>('/audit-logs/');
@@ -260,6 +271,6 @@ export const getAuditLogs = () => api.get<AuditLog[]>('/audit-logs/');
 // ---- Users ----
 export const getUsers = () => api.get<User[]>('/user-list/');
 export const updateUser = (id: number | string, data: Partial<User>) =>
-  api.patch<User>(`/users/${id}/`, data);
+  api.patch<User>(`/users/${id}/`, { role: data.role });
 export const deleteUser = (id: number | string) =>
   api.delete<{ success?: boolean }>(`/users/${id}/delete`);
