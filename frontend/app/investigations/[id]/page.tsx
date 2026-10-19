@@ -53,7 +53,7 @@ export default function InvestigationWorkspacePage() {
 
 function InvestigationWorkspaceContent() {
   const params = useParams();
-  const id = params.id as string;
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
 
   const [investigation, setInvestigation] = useState<Investigation | null>(null);
   const [alert, setAlert] = useState<Alert | null>(null);
@@ -74,6 +74,11 @@ function InvestigationWorkspaceContent() {
   const [uploading, setUploading] = useState(false);
 
   const load = useCallback(async () => {
+    if (!id || !/^\d+$/.test(id)) {
+      setError('Invalid investigation ID');
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -118,10 +123,10 @@ function InvestigationWorkspaceContent() {
   const canEdit = !isCompleted;
 
   async function handleSave() {
-    if (!investigation) return;
+    if (!investigation || !id) return;
     setSaving(true);
     try {
-      const updated = await updateInvestigation(investigation.id, {
+      const updated = await updateInvestigation(id, {
         status: investigation.status as string,
         summary,
         root_cause: rootCause,
@@ -152,17 +157,17 @@ function InvestigationWorkspaceContent() {
       setCompleteOpen(false);
       return;
     }
-    if (!investigation) return;
+    if (!investigation || !id) return;
     setCompleting(true);
     try {
-      await updateInvestigation(investigation.id, {
+      await updateInvestigation(id, {
         status: investigation.status as string,
         summary,
         root_cause: rootCause,
         recommendations,
         conclusion,
       });
-      const completed = await completeInvestigation(investigation.id);
+      const completed = await completeInvestigation(id);
       setInvestigation(completed);
       toast.success('Investigation completed. The associated alert has been closed.');
       await load();
@@ -181,10 +186,10 @@ function InvestigationWorkspaceContent() {
   }
 
   async function handleUpload() {
-    if (!investigation || !evidenceFile) return;
+    if (!investigation || !id || !evidenceFile) return;
     setUploading(true);
     try {
-      await uploadEvidence(investigation.id, evidenceFile, evidenceDesc);
+      await uploadEvidence(id, evidenceFile, evidenceDesc);
       toast.success('Evidence uploaded');
       setEvidenceFile(null);
       setEvidenceDesc('');

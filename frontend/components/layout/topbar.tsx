@@ -71,7 +71,7 @@ export function Topbar() {
   const initials = user?.username?.slice(0, 2).toUpperCase() || '??';
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-card/80 px-4 backdrop-blur-sm lg:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-card px-4 lg:px-6">
       <div className="flex items-center gap-3">
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
@@ -84,7 +84,7 @@ export function Topbar() {
           </SheetContent>
         </Sheet>
         <div className="hidden sm:block">
-          <h2 className="text-lg font-semibold">{pageTitle}</h2>
+          <h2 className="text-base font-semibold">{pageTitle}</h2>
           <nav className="flex items-center gap-1 text-xs text-muted-foreground">
             {crumbs.map((c, i) => (
               <span key={i} className="flex items-center gap-1">

@@ -68,7 +68,7 @@ export interface Alert {
   assigned_to?: number | User | null;
   assigned_investigator?: number | User | null;
   investigation?: number | null;
-  mitre_technique?: string;
+  mitre_technique?: string | MitreTechnique;
   mitre_tactic?: string;
   raw_log?: string;
   [key: string]: unknown;
@@ -76,6 +76,12 @@ export interface Alert {
 
 export interface SecurityLog {
   id: number;
+  event_id?: number;
+  log_type?: string;
+  computer?: string;
+  username?: string;
+  ip_address?: string;
+  time_generated?: string;
   timestamp?: string;
   created_at?: string;
   level?: string;

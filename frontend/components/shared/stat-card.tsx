@@ -21,15 +21,15 @@ const accents: Record<string, string> = {
 
 export function StatCard({ title, value, icon: Icon, accent = 'blue', subtitle }: StatCardProps) {
   return (
-    <Card className="relative overflow-hidden">
-      <CardContent className="flex items-center justify-between p-5">
+    <Card className="relative overflow-hidden border-l-2 border-l-primary/60">
+      <CardContent className="flex items-center justify-between p-4">
         <div className="space-y-1">
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-2xl font-bold tracking-tight">{value}</p>
+          <p className="text-2xl font-semibold tracking-tight">{value}</p>
           {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
         </div>
-        <div className={cn('flex h-12 w-12 items-center justify-center rounded-lg', accents[accent])}>
-          <Icon className="h-6 w-6" />
+        <div className={cn('flex h-9 w-9 items-center justify-center rounded-md', accents[accent])}>
+          <Icon className="h-5 w-5" />
         </div>
       </CardContent>
     </Card>

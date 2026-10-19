@@ -40,17 +40,17 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background grid-bg">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/80 to-background" />
+      <div className="absolute inset-0 bg-background/60" />
       <div className="relative z-10 w-full max-w-md px-4">
         <div className="mb-8 flex flex-col items-center text-center">
           <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
             <ShieldCheck className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">SentinelSIEM</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">SentinelSIEM</h1>
           <p className="mt-1 text-sm text-muted-foreground">Security Operations Platform</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-border bg-card p-6 shadow-xl">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-md border border-border bg-card p-6">
           <div className="space-y-2">
             <label htmlFor="username" className="text-sm font-medium">Username</label>
             <div className="relative">

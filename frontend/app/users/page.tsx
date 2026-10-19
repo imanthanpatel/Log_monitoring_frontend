@@ -133,8 +133,10 @@ function UsersContent() {
     if (!editUser) return;
     setSaving(true);
     try {
-      const updated = await updateUser(editUser.id, { role: editRole });
-      setUsers((prev) => prev.map((u) => (u.id === editUser.id ? { ...u, role: editRole } : u)));
+      const response = await updateUser(editUser.id, { role: editRole });
+      setUsers((prev) =>
+        prev.map((u) => (u.id === editUser.id ? response.user : u))
+      );
       toast.success('User updated successfully');
       setEditOpen(false);
     } catch (err) {
@@ -268,20 +270,20 @@ function UsersContent() {
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">Username</label>
-              <Input value={editUsername} onChange={(e) => setEditUsername(e.target.value)} />
+              <Input value={editUsername} disabled />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Email</label>
-              <Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} type="email" />
+              <Input value={editEmail} disabled />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">First Name</label>
-                <Input value={editFirstName} onChange={(e) => setEditFirstName(e.target.value)} />
+                <Input value={editFirstName} disabled />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Last Name</label>
-                <Input value={editLastName} onChange={(e) => setEditLastName(e.target.value)} />
+                <Input value={editLastName} disabled />
               </div>
             </div>
             <div className="space-y-2">

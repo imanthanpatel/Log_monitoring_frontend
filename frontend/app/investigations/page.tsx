@@ -22,9 +22,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getMyInvestigations, ApiError } from '@/lib/api';
+import { getCompletedInvestigations, getMyInvestigations, ApiError } from '@/lib/api';
 import { formatDate, getUserId } from '@/lib/format';
 import type { Alert, Investigation } from '@/lib/types';
+import { useAuth } from '@/lib/auth-context';
 
 const statusOptions = [
   { label: 'Assigned', value: 'ASSIGNED' },
@@ -44,6 +45,10 @@ export default function InvestigationsPage() {
 }
 
 function InvestigationsContent() {
+  const { user } = useAuth();
+  const isSocOrAdmin = ['SOC', 'ADMIN'].includes(
+    String(user?.role || '').toUpperCase()
+  );
   const [investigations, setInvestigations] = useState<Investigation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,14 +59,17 @@ function InvestigationsContent() {
     setLoading(true);
     setError(null);
     try {
-      const data = await getMyInvestigations();
+      const data =
+        isSocOrAdmin
+          ? await getCompletedInvestigations()
+          : await getMyInvestigations();
       setInvestigations(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to load investigations');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isSocOrAdmin]);
 
   useEffect(() => {
     load();
@@ -96,7 +104,14 @@ function InvestigationsContent() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="My Investigations" description="Investigations assigned to you">
+      <PageHeader
+        title={isSocOrAdmin ? 'Completed Investigations' : 'My Investigations'}
+        description={
+          isSocOrAdmin
+            ? 'Review completed investigation reports'
+            : 'Investigations assigned to you'
+        }
+      >
         <Button variant="outline" size="sm" onClick={load}>
           <RefreshCw className="mr-2 h-4 w-4" />
           Refresh
@@ -124,7 +139,15 @@ function InvestigationsContent() {
           ) : error ? (
             <ErrorState message={error} onRetry={load} />
           ) : filtered.length === 0 ? (
-            <EmptyState icon={FileSearch} title="No investigations found" description="No investigations have been assigned to you yet." />
+            <EmptyState
+              icon={FileSearch}
+              title="No investigations found"
+              description={
+                isSocOrAdmin
+                  ? 'No completed investigation reports are available.'
+                  : 'No investigations have been assigned to you yet.'
+              }
+            />
           ) : (
             <div className="overflow-x-auto">
               <Table>

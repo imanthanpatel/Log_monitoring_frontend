@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { Fragment, useEffect, useState, useCallback, useMemo } from 'react';
 import { ScrollText, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
 import { AppLayout } from '@/components/layout/app-layout';
 import { RouteGuard } from '@/components/layout/route-guard';
@@ -38,7 +38,7 @@ function LogsContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [level, setLevel] = useState('ALL');
+  const [logType, setLogType] = useState('ALL');
   const [source, setSource] = useState('ALL');
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
@@ -62,7 +62,7 @@ function LogsContent() {
   const levels = useMemo(() => {
     const set = new Set<string>();
     logs.forEach((l) => {
-      const v = l.level || l.severity;
+      const v = l.log_type;
       if (v) set.add(String(v).toUpperCase());
     });
     return Array.from(set).sort().map((v) => ({ label: v, value: v }));
@@ -79,19 +79,19 @@ function LogsContent() {
 
   const filtered = useMemo(() => {
     return logs.filter((l) => {
-      const lv = (l.level || l.severity || '').toUpperCase();
+      const type = (l.log_type || '').toUpperCase();
       const src = l.source || l.source_ip || '';
-      if (level !== 'ALL' && lv !== level) return false;
+      if (logType !== 'ALL' && type !== logType) return false;
       if (source !== 'ALL' && src !== source) return false;
       if (search) {
         const q = search.toLowerCase();
         const msg = String(l.message || l.event_type || '').toLowerCase();
-        const raw = String(l.raw_data || '').toLowerCase();
+        const raw = JSON.stringify(l).toLowerCase();
         return msg.includes(q) || raw.includes(q) || src.toLowerCase().includes(q);
       }
       return true;
     });
-  }, [logs, search, level, source]);
+  }, [logs, search, logType, source]);
 
   function toggle(id: number) {
     setExpanded((prev) => {
@@ -120,7 +120,7 @@ function LogsContent() {
               placeholder="Search message, source, raw data…"
               className="flex-1"
             />
-            <FilterSelect value={level} onChange={setLevel} options={levels} placeholder="All Levels" />
+            <FilterSelect value={logType} onChange={setLogType} options={levels} placeholder="All Log Types" />
             <FilterSelect value={source} onChange={setSource} options={sources} placeholder="All Sources" />
           </div>
         </CardContent>
@@ -141,7 +141,7 @@ function LogsContent() {
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="w-8"></TableHead>
                     <TableHead className="w-16">ID</TableHead>
-                    <TableHead className="w-24">Level</TableHead>
+                    <TableHead className="w-24">Event ID</TableHead>
                     <TableHead>Source</TableHead>
                     <TableHead>Message</TableHead>
                     <TableHead className="w-44">Timestamp</TableHead>
@@ -150,26 +150,20 @@ function LogsContent() {
                 <TableBody>
                   {filtered.map((log) => {
                     const isOpen = expanded.has(log.id);
-                    const lv = String(log.level || log.severity || '').toUpperCase();
-                    const lvColor =
-                      lv === 'CRITICAL' || lv === 'ERROR' ? 'text-red-400' :
-                      lv === 'HIGH' || lv === 'WARNING' ? 'text-orange-400' :
-                      lv === 'MEDIUM' || lv === 'INFO' ? 'text-blue-400' :
-                      'text-muted-foreground';
                     return (
-                      <>
-                        <TableRow key={log.id} className="cursor-pointer" onClick={() => toggle(log.id)}>
+                      <Fragment key={log.id}>
+                        <TableRow className="cursor-pointer" onClick={() => toggle(log.id)}>
                           <TableCell className="w-8 p-2">
                             {isOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                           </TableCell>
                           <TableCell className="font-mono text-xs">#{log.id}</TableCell>
-                          <TableCell className={`font-medium ${lvColor}`}>{lv || '—'}</TableCell>
-                          <TableCell className="text-muted-foreground">{log.source || log.source_ip || '—'}</TableCell>
+                          <TableCell className="font-mono text-xs">{log.event_id ?? '—'}</TableCell>
+                          <TableCell className="text-muted-foreground">{log.source || log.ip_address || '—'}</TableCell>
                           <TableCell className="max-w-md truncate">{log.message || log.event_type || '—'}</TableCell>
-                          <TableCell className="text-xs text-muted-foreground">{formatDate(log.timestamp || log.created_at)}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{formatDate(log.time_generated || log.timestamp || log.created_at)}</TableCell>
                         </TableRow>
                         {isOpen && (
-                          <TableRow key={`${log.id}-detail`} className="hover:bg-transparent">
+                          <TableRow className="hover:bg-transparent">
                             <TableCell colSpan={6} className="bg-secondary/20 p-4">
                               <pre className="max-h-64 overflow-auto scrollbar-thin rounded-md border border-border bg-background p-3 text-xs font-mono text-muted-foreground">
                                 {log.raw_data || JSON.stringify(log, null, 2)}
@@ -177,7 +171,7 @@ function LogsContent() {
                             </TableCell>
                           </TableRow>
                         )}
-                      </>
+                      </Fragment>
                     );
                   })}
                 </TableBody>

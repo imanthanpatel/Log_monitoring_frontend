@@ -11,6 +11,7 @@ import {
   ShieldX,
   RefreshCw,
   ArrowRight,
+  FileSearch,
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/app-layout';
 import { RouteGuard } from '@/components/layout/route-guard';
@@ -30,9 +31,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getAlerts, getDashboard, ApiError } from '@/lib/api';
+import { getAlerts, getCompletedInvestigations, getDashboard, ApiError } from '@/lib/api';
 import { formatDate } from '@/lib/format';
-import type { Alert, DashboardData } from '@/lib/types';
+import type { Alert, DashboardData, Investigation } from '@/lib/types';
+import { useAuth } from '@/lib/auth-context';
 
 export default function DashboardPage() {
   return (
@@ -45,8 +47,10 @@ export default function DashboardPage() {
 }
 
 function DashboardContent() {
+  const { user } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [completedInvestigations, setCompletedInvestigations] = useState<Investigation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,18 +58,24 @@ function DashboardContent() {
     setLoading(true);
     setError(null);
     try {
-      const [dash, alertData] = await Promise.all([
+      const [dash, alertData, investigationData] = await Promise.all([
         getDashboard(),
         getAlerts(),
+        user?.role === 'SOC' || user?.role === 'ADMIN'
+          ? getCompletedInvestigations()
+          : Promise.resolve([]),
       ]);
       setData(dash);
       setAlerts(Array.isArray(alertData) ? alertData : []);
+      setCompletedInvestigations(
+        Array.isArray(investigationData) ? investigationData : []
+      );
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to load dashboard');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.role]);
 
   useEffect(() => {
     load();
@@ -83,6 +93,14 @@ function DashboardContent() {
   ];
   const maxSev = Math.max(...severityData.map((s) => s.value), 1);
   const recentAlerts = alerts.slice(0, 8);
+
+  const getInvestigationAlertId = (investigation: Investigation) => {
+    if (typeof investigation.alert === 'number') return investigation.alert;
+    if (investigation.alert && typeof investigation.alert === 'object') {
+      return investigation.alert.id;
+    }
+    return '—';
+  };
 
   return (
     <div className="space-y-6">
@@ -200,6 +218,43 @@ function DashboardContent() {
                   ))}
                 </TableBody>
               </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle className="text-base">Completed Investigation Reports</CardTitle>
+          <FileSearch className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          {completedInvestigations.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              No completed investigation reports found
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {completedInvestigations.slice(0, 5).map((investigation) => (
+                <Link
+                  key={investigation.id}
+                  href={`/investigations/${investigation.id}`}
+                  className="block rounded-md border border-border p-3 transition-colors hover:bg-accent/50"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-medium">
+                      Investigation #{investigation.id} · Alert #{getInvestigationAlertId(investigation)}
+                    </p>
+                    <StatusBadge status={investigation.status} />
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                    {investigation.conclusion || investigation.summary || 'Report completed'}
+                  </p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Completed {formatDate(investigation.completed_at)}
+                  </p>
+                </Link>
+              ))}
             </div>
           )}
         </CardContent>

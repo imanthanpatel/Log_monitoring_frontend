@@ -78,6 +78,15 @@ type FetchOptions = {
   skipAuth?: boolean;
 };
 
+type PaginatedResponse<T> = {
+  results: T[];
+};
+
+function listResult<T>(data: T[] | PaginatedResponse<T>): T[] {
+  if (Array.isArray(data)) return data;
+  return Array.isArray(data.results) ? data.results : [];
+}
+
 async function request<T>(path: string, opts: FetchOptions = {}): Promise<T> {
   const url = `${API_BASE}${path}`;
   const headers: Record<string, string> = { ...opts.headers };
@@ -208,7 +217,8 @@ export async function getCurrentUser(): Promise<User> {
 export const getDashboard = () => api.get<DashboardData>('/dashboard/');
 
 // ---- Alerts ----
-export const getAlerts = () => api.get<Alert[]>('/alerts/');
+export const getAlerts = async () =>
+  listResult(await api.get<Alert[] | PaginatedResponse<Alert>>('/alerts/'));
 export const getAlert = (id: number | string) => api.get<Alert>(`/alerts/${id}/`);
 export const updateAlertStatus = (id: number, status: AlertStatus) =>
   api.put<Alert>('/alerts/status/', { id, status });
@@ -216,19 +226,32 @@ export const assignAlert = (id: number | string, investigatorId: number) =>
   api.post<Alert>(`/alerts/${id}/assign/`, { investigator: investigatorId });
 
 // ---- Logs ----
-export const getLogs = () => api.get<SecurityLog[]>('/logs/');
+export const getLogs = async () =>
+  listResult(await api.get<SecurityLog[] | PaginatedResponse<SecurityLog>>('/logs/'));
 
 // ---- Rules ----
-export const getRules = () => api.get<DetectionRule[]>('/rules/');
+export const getRules = async () =>
+  listResult(await api.get<DetectionRule[] | PaginatedResponse<DetectionRule>>('/rules/'));
 
 // ---- MITRE ----
-export const getMitre = () => api.get<MitreTechnique[]>('/mitre/');
+export const getMitre = async () =>
+  listResult(await api.get<MitreTechnique[] | PaginatedResponse<MitreTechnique>>('/mitre/'));
 export const getMitreCoverage = () => api.get<MitreCoverage>('/mitre/coverage/');
 export const getMitreStats = () => api.get<MitreStats>('/mitre/stats/');
 
 // ---- Investigations ----
-export const getMyInvestigations = () =>
-  api.get<Investigation[]>('/investigations/me/');
+export const getMyInvestigations = async () =>
+  listResult(
+    await api.get<Investigation[] | PaginatedResponse<Investigation>>(
+      '/investigations/me/'
+    )
+  );
+export const getCompletedInvestigations = async () =>
+  listResult(
+    await api.get<Investigation[] | PaginatedResponse<Investigation>>(
+      '/investigations/completed/'
+    )
+  );
 export const getInvestigation = (id: number | string) =>
   api.get<Investigation>(`/investigations/${id}/`);
 export const updateInvestigation = (
@@ -239,8 +262,12 @@ export const completeInvestigation = (id: number | string) =>
   api.post<Investigation>(`/investigations/${id}/complete/`, {});
 
 // ---- Evidence ----
-export const getEvidence = (id: number | string) =>
-  api.get<Evidence[]>(`/investigations/${id}/evidence/`);
+export const getEvidence = async (id: number | string) =>
+  listResult(
+    await api.get<Evidence[] | PaginatedResponse<Evidence>>(
+      `/investigations/${id}/evidence/`
+    )
+  );
 export const uploadEvidence = (
   id: number | string,
   file: File,
@@ -254,8 +281,11 @@ export const uploadEvidence = (
 
 // ---- Notifications ----
 export const getNotifications = async () => {
-  const data = await api.get<Array<Notification & { notification_type?: string; is_read?: boolean; read?: boolean }>>('/notifications/');
-  return (Array.isArray(data) ? data : []).map((n) => ({
+  const data = await api.get<
+    | Array<Notification & { notification_type?: string; is_read?: boolean; read?: boolean }>
+    | PaginatedResponse<Notification & { notification_type?: string; is_read?: boolean; read?: boolean }>
+  >('/notifications/');
+  return listResult(data).map((n) => ({
     ...n,
     type: n.notification_type ?? n.type,
     read: n.read ?? n.is_read ?? false,
@@ -266,11 +296,15 @@ export const markNotificationRead = (id: number | string) =>
   api.patch<{ message: string; notification_id: number; is_read: boolean }>(`/notifications/${id}/read/`, {});
 
 // ---- Audit Logs ----
-export const getAuditLogs = () => api.get<AuditLog[]>('/audit-logs/');
+export const getAuditLogs = async () =>
+  listResult(await api.get<AuditLog[] | PaginatedResponse<AuditLog>>('/audit-logs/'));
 
 // ---- Users ----
-export const getUsers = () => api.get<User[]>('/user-list/');
+export const getUsers = async () =>
+  listResult(await api.get<User[] | PaginatedResponse<User>>('/user-list/'));
 export const updateUser = (id: number | string, data: Partial<User>) =>
-  api.patch<User>(`/users/${id}/`, { role: data.role });
+  api.patch<{ message: string; user: User }>(`/users/${id}/`, {
+    role: data.role,
+  });
 export const deleteUser = (id: number | string) =>
   api.delete<{ success?: boolean }>(`/users/${id}/delete`);

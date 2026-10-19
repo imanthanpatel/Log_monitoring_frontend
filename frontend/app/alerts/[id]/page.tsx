@@ -167,7 +167,18 @@ function AlertDetailContent() {
               <InfoRow label="Source" value={alert.source || alert.source_ip || '—'} />
               <InfoRow label="Created" value={formatDate(alert.created_at || alert.timestamp)} />
               <InfoRow label="Updated" value={formatDate(alert.updated_at)} />
-              {alert.mitre_technique && <InfoRow label="MITRE Technique" value={alert.mitre_technique} />}
+              {alert.mitre_technique && (
+                <InfoRow
+                  label="MITRE Technique"
+                  value={
+                    typeof alert.mitre_technique === 'string'
+                      ? alert.mitre_technique
+                      : alert.mitre_technique.name ||
+                        alert.mitre_technique.technique_id ||
+                        '—'
+                  }
+                />
+              )}
               {alert.mitre_tactic && <InfoRow label="MITRE Tactic" value={alert.mitre_tactic} />}
             </div>
             {(alert.message || alert.description) && (
